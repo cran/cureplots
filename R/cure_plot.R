@@ -5,6 +5,8 @@
 #'   used to produce CURE plot; or regression model for count data (e.g.,
 #'   Poisson) adjusted with \code{\link[stats]{glm}} or \code{\link[mgcv]{gam}}.
 #' @param covariate Required when \code{x} is model fit.
+#' @param n_resamples Number of resamples to overlay on CURE plot. Zero is the
+#'   default.
 #'
 #' @return A CURE plot generated with \pkg{ggplot2}.
 #' @export
@@ -43,7 +45,10 @@
 #'
 #' ## Providing glm object
 #' cure_plot(mod, "LNAADT")
-cure_plot <- function(x, covariate = NULL) {
+#'
+#' ## Providing glm object adding resamples cumulative residuals
+#' cure_plot(mod, "LNAADT", n_resamples = 3)
+cure_plot <- function(x, covariate = NULL, n_resamples = 0) {
 
   ## Dummy dfns. to avoid warnings while building the package. Not actually
   ## necessary.
@@ -65,6 +70,7 @@ cure_plot <- function(x, covariate = NULL) {
     )
 
 
+  ## Check if a data frame or model was received.
   if (is.data.frame(x)) {
     cov_name <- names(x)[1]
 
@@ -74,6 +80,10 @@ cure_plot <- function(x, covariate = NULL) {
 
     ## Create copy
     plot_df <- x
+
+    ## Copy covariate values
+    plotcov__ <- plot_df[[cov_name]]
+    residuals <- plot_df[["residual"]]
 
     ## Case when a model is provided
   } else {
@@ -99,9 +109,30 @@ cure_plot <- function(x, covariate = NULL) {
   ## Rename first column
   names(plot_df) <- c("plotcov__", names(plot_df)[-1])
 
-  plot_df |>
+  ## Create base for ggplot2 object
+  out <-
+    plot_df |>
     ggplot2::ggplot() +
-    ggplot2::aes(x = plotcov__) +
+    ggplot2::aes(x = plotcov__)
+
+  ## Produce resamples (if required) and add them to ggplot2 object.
+  if (n_resamples > 0) {
+
+    ## Resample residuals
+    resamples_tbl <-
+      resample_residuals(plotcov__, residuals, n_resamples)
+
+    ## Add overlay resamples to plot
+    out <-
+      out +
+      ggplot2::geom_line(
+        data = resamples_tbl,
+        ggplot2::aes(x = plotcov__, y = cumres, group = sample),
+        col = "grey"
+      )
+  }
+
+  out +
     ggplot2::geom_line(
       ggplot2::aes(y = cumres), linewidth = 0.9, color = "#112446") +
     ggplot2::geom_line(

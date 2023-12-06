@@ -4,7 +4,7 @@
 \alias{cure_plot}
 \title{CURE Plot}
 \usage{
-cure_plot(x, covariate = NULL)
+cure_plot(x, covariate = NULL, n_resamples = 0)
 }
 \arguments{
 \item{x}{Either a data frame produced with
@@ -13,6 +13,9 @@ used to produce CURE plot; or regression model for count data (e.g.,
 Poisson) adjusted with \code{\link[stats]{glm}} or \code{\link[mgcv]{gam}}.}
 
 \item{covariate}{Required when \code{x} is model fit.}
+
+\item{n_resamples}{Number of resamples to overlay on CURE plot. Zero is the
+default.}
 }
 \value{
 A CURE plot generated with \pkg{ggplot2}.
@@ -54,4 +57,7 @@ cure_plot(cure_df)
 
 ## Providing glm object
 cure_plot(mod, "LNAADT")
+
+## Providing glm object adding resamples cumulative residuals
+cure_plot(mod, "LNAADT", n_resamples = 3)
 }
